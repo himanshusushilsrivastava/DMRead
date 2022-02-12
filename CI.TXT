@@ -1,0 +1,80 @@
+set +x
+echo "CodeInvestigator Processing Started : " ${BUILD_TIMESTAMP}
+
+# the git clone cmd used for cloning each repository
+# the parameter recursive is used to clone submodules, too.
+
+
+for i in {1..10..1}
+    do
+       echo  "cloning repos from page number $i "
+ 
+GIT_CLONE_CMD="git clone "
+
+# fetch repository list via github api
+# grep fetches the json object key ssh_url, which contains the ssh url for the repository
+REPOLIST=`curl --silent "https://github.optum.com/api/v3/users/UHOneFacets/repos?per_page=1000&page=${i}" -q | grep "\"clone_url\"" | awk -F': "' '{print $2}' | sed -e 's/",//g'`
+
+# loop over all repository urls and execute clone
+for REPO in $REPOLIST; do 
+echo ${REPO}     
+${GIT_CLONE_CMD}${REPO} 
+done
+
+done
+echo "Completed Successfully"
+
+#git clone https://github.optum.com/UHOneFacets/Microservice_Facets_Member_Inquiry_API.git
+
+
+##################
+set +x
+IFS=$'\n'       # make newlines the only separator
+if test -z "${MultiKeyword}" 
+then
+      echo "MultiKeyword is NULL"
+else
+      echo "MultiKeyword is NOT NULL"
+      i=1
+for Search_Keyword in ${MultiKeyword[@]}; do
+#echo $Search_Keyword
+  ((i++))
+grep --include=\*.{java,xml,properties,sql,sqt} -rin --color "$Search_Keyword"| tr ":" ","> kwd_srch_$i.csv
+  
+done
+
+#echo "MultiKeyword is not NULL generating report file"
+#cp   kwd_srch1.csv CodeInvestigator_Report_Multiline.csv
+fi
+
+#sed -i 1i"FilePath,LineNumber,CodeLine" CodeInvestigator_Report_Multiline.csv
+
+echo "CodeInvestigator Processing Completed ! " 
+
+
+
+
+#########
+set +x
+echo "CodeInvestigator Report generated as below : " 
+cat *.csv > CodeInvestigator_Report_Multiline.csv
+sed -i 1i"FilePath,LineNumber,CodeLine" CodeInvestigator_Report_Multiline.csv
+cat CodeInvestigator_Report_Multiline.csv
+if [[ -z $(grep '[^[:space:]]' CodeInvestigator_Report_Multiline.csv) ]] ; then
+
+echo "*          No Match found in repositories          *" > CodeInvestigator_Report_Multiline.csv
+
+echo "****************************************************"
+echo "*          No Match found in repositories          *"
+echo "****************************************************"
+
+fi
+
+###
+<h3><span style="color: #808080;">Hi,</span></h3>
+<p><span style="color: #808080;">CodeInvestigator scan report for </span></p>
+<p><span style="color: #808080;">${MultiKeyword}  </span> <p>
+<p><span style="color: #808080;">has been attached for your reference. Scan results can also be found at below link : </span></p>
+<p> ${BUILD_URL}</p>
+<p><span style="color: #808080;">Please reach out to UHOne_Dev_OGS_Team &lt;UHOne_Dev_Offshore_DL@ds.uhc.com&gt; in case of any issues.</span></p>
+<h3><span style="color: #808080;">Thanks for using CodeInvestigator Tool !</span></h3>
